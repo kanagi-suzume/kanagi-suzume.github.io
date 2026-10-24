@@ -20,12 +20,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     const videoId = urlParams.get('video') || '2908396731';
 
-    // プレイヤーの初期化
+    // ★ ここに parent オプションを追加する
     const player = new Twitch.Player("twitch-embed", {
       width: "100%",
       height: "100%",
       video: videoId,
-      autoplay: false
+      autoplay: false,
+      parent: [window.location.hostname] 
     });
 
     // 親ウィンドウ（アナライザー）からのシーク命令を受信
