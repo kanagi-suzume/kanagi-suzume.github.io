@@ -2,51 +2,57 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ロムシンク - Twitchプレイヤーブリッジ</title>
+  <title>ロムシンク - 配信VOD振り返りツール</title>
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
     #twitch-embed { width: 100%; height: 100%; }
   </style>
-  <script src="https://player.twitch.tv/js/embed/v1.js"></script>
 </head>
 <body>
 
-<div id="twitch-embed"></div>
+  <!-- プレースホルダー -->
+  <div id="twitch-embed"></div>
 
-<script type="text/javascript">
-  const urlParams = new URLSearchParams(window.location.search);
-  const videoId = urlParams.get('video') || '2908396731';
+  <!-- Twitch Embed Script -->
+  <script src="https://player.twitch.tv/js/embed/v1.js"></script>
 
-  // プレイヤーのインスタンスを作成
-  const player = new Twitch.Player("twitch-embed", {
-    width: "100%",
-    height: "100%",
-    video: videoId,
-    autoplay: false
-  });
+  <script type="text/javascript">
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('video') || '2908396731';
 
-  // 親ウィンドウ（アナライザー）からのメッセージを受信
-  window.addEventListener('message', (event) => {
-    // 必要に応じて event.origin の安全チェックを入れるとよりセキュアです
-    const data = event.data;
+    // プレイヤーの初期化
+    const player = new Twitch.Player("twitch-embed", {
+      width: "100%",
+      height: "100%",
+      video: videoId,
+      autoplay: false
+    });
 
-    if (data && data.type === 'SEEK') {
-      const targetSec = data.seconds;
-      if (typeof targetSec === 'number' && player) {
-        player.seek(targetSec);
-        player.play(); // シーク後に再生状態にする場合
+    // 親ウィンドウ（アナライザー）からのシーク命令を受信
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (data && data.type === 'SEEK') {
+        const targetSec = data.seconds;
+        if (typeof targetSec === 'number' && player) {
+          player.seek(targetSec);
+          player.play();
+        }
       }
-    }
-  });
+    });
 
-  // （おまけ）逆に、プレイヤー側の再生位置を親にリアルタイムで教えたい場合：
-  setInterval(() => {
-    if (player && typeof player.getCurrentTime === 'function') {
-      const currentSec = player.getCurrentTime();
-      window.parent.postMessage({ type: 'TIME_UPDATE', currentTime: currentSec }, '*');
-    }
-  }, 500);
-</script>
+    // プレイヤーの現在再生位置を親ウィンドウへ定期送信（0.5秒おき）
+    setInterval(() => {
+      if (player && typeof player.getCurrentTime === 'function') {
+        const currentSec = player.getCurrentTime();
+        if (!isNaN(currentSec)) {
+          window.parent.postMessage({
+            type: 'TIME_UPDATE',
+            currentTime: currentSec
+          }, '*');
+        }
+      }
+    }, 500);
+  </script>
 
 </body>
 </html>
